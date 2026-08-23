@@ -10,9 +10,13 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+
 
 add_executable(pre_approach src/pre_approach.cpp)
-ament_target_dependencies(pre_approach rclcpp rclcpp_lifecycle)
+ament_target_dependencies(pre_approach rclcpp rclcpp_lifecycle
+	sensor_msgs nav_msgs)
 
 install(TARGETS
    pre_approach

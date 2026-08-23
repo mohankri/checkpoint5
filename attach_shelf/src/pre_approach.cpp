@@ -1,9 +1,13 @@
+#include "nav_msgs/msg/odometry.hpp"
 #include "rcl_interfaces/msg/detail/parameter_descriptor__struct.hpp"
+#include "rclcpp/create_subscription.hpp"
 #include "rclcpp/logger.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/qos_overriding_options.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
+
 #include <cstdint>
 #include <memory>
 
@@ -35,6 +39,19 @@ public:
 protected:
   CallbackReturn on_configure(rclcpp_lifecycle::State &) {
     RCLCPP_INFO(this->get_logger(), "On Configure");
+    auto qos = rclcpp::QoS(10).reliability(rclcpp::ReliabilityPolicy::Reliable);
+
+    vel_pub_ =
+        this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 100);
+
+    odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
+        "/odom", qos,
+        std::bind(&PreApproach::odom_callback, this, std::placeholders::_1));
+
+    scan_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
+        "/scan", qos,
+        std::bind(&PreApproach::scan_callback, this, std::placeholders::_1));
+
     return CallbackReturn::SUCCESS;
   }
 
@@ -62,6 +79,15 @@ protected:
     RCLCPP_INFO(this->get_logger(), "On Error");
     return CallbackReturn::SUCCESS;
   }
+
+private:
+  void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {}
+
+  void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {}
+
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr vel_pub_;
 };
 
 int main(int argc, char **argv) {
