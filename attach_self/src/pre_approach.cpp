@@ -10,7 +10,7 @@ using CallbackReturn =
 
 class PreApproach : public rclcpp_lifecycle::LifecycleNode {
 public:
-  PreApproach() : rclcpp_lifecycle::LifecycleNode("PreApproach") {
+  PreApproach() : rclcpp_lifecycle::LifecycleNode("PreApproachNode") {
     RCLCPP_INFO(this->get_logger(), "Pre Approach");
   }
 

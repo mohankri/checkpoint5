@@ -1,0 +1,21 @@
+<launch>
+
+  <!-- Declare launch arguments -->
+  <arg name="obstacle" default="0.2"/>
+  <arg name="degrees" default="0.1"/>
+
+  <!-- Node definition -->
+  <node
+    pkg="attach_self"
+    exec="pre_approach"
+    name="PreApproachNode"
+    output="screen"
+    emulate_tty="true">
+
+    <!-- Parameters -->
+    <param name="obstacle" value="$(var obstacle)"/>
+    <param name="degrees" value="$(var degrees)"/>
+
+  </node>
+
+</launch>
