@@ -93,7 +93,20 @@ protected:
   }
 
 private:
-  void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {}
+  void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
+    // obstacle_ahead_ = false;
+
+    float center_min = std::numeric_limits<float>::infinity();
+    float center_max = 0.0f;
+    RCLCPP_INFO(this->get_logger(), "Total Number of Sample data %ld",
+                msg->ranges.size());
+    RCLCPP_INFO(this->get_logger(), "Value at 0 degree(right side) %0.2f",
+                msg->ranges[0]);
+    RCLCPP_INFO(this->get_logger(), "Value at 90 Center %0.2f",
+                msg->ranges[msg->ranges.size() / 2]);
+    RCLCPP_INFO(this->get_logger(), "Value at 180 degree (right side) %0.2f",
+                msg->ranges[msg->ranges.size() - 1]);
+  }
 
   void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {}
 
