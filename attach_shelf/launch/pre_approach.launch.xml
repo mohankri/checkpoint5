@@ -6,7 +6,7 @@
 
   <!-- Node definition -->
   <node
-    pkg="attach_self"
+    pkg="attach_shelf"
     exec="pre_approach"
     name="PreApproachNode"
     output="screen"

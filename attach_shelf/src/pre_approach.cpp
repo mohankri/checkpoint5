@@ -1,6 +1,9 @@
+#include "lifecycle_msgs/msg/transition.hpp"
+#include "lifecycle_msgs/srv/change_state.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "rcl_interfaces/msg/detail/parameter_descriptor__struct.hpp"
 #include "rclcpp/create_subscription.hpp"
+#include "rclcpp/executors.hpp"
 #include "rclcpp/logger.hpp"
 #include "rclcpp/logging.hpp"
 #include "rclcpp/qos_overriding_options.hpp"
@@ -30,6 +33,15 @@ public:
     this->declare_parameter<double>("obstacle", 0.0, obstacle_desc);
     this->declare_parameter<double>("degrees", 0.0, degrees_desc);
 
+    init_timer_ =
+        this->create_wall_timer(std::chrono::milliseconds(0), [this]() {
+          RCLCPP_INFO(get_logger(), "init timer fired"); // ← does THIS print?
+
+          this->configure(); // node fully constructed + spinning now
+          this->activate();
+          init_timer_->cancel(); // one-shot
+        });
+
     RCLCPP_INFO(this->get_logger(), "Obstacle Distance %f",
                 this->get_parameter("obstacle").as_double());
     RCLCPP_INFO(this->get_logger(), "Degrees %f",
@@ -37,7 +49,7 @@ public:
   }
 
 protected:
-  CallbackReturn on_configure(rclcpp_lifecycle::State &) {
+  CallbackReturn on_configure(const rclcpp_lifecycle::State &prev_state) {
     RCLCPP_INFO(this->get_logger(), "On Configure");
     auto qos = rclcpp::QoS(10).reliability(rclcpp::ReliabilityPolicy::Reliable);
 
@@ -55,27 +67,27 @@ protected:
     return CallbackReturn::SUCCESS;
   }
 
-  CallbackReturn on_activate(rclcpp_lifecycle::State &) {
+  CallbackReturn on_activate(const rclcpp_lifecycle::State &prev_state) {
     RCLCPP_INFO(this->get_logger(), "On Activate");
     return CallbackReturn::SUCCESS;
   }
 
-  CallbackReturn on_deactivate(rclcpp_lifecycle::State &) {
+  CallbackReturn on_deactivate(const rclcpp_lifecycle::State &prev_state) {
     RCLCPP_INFO(this->get_logger(), "On Deactivate");
     return CallbackReturn::SUCCESS;
   }
 
-  CallbackReturn on_cleanup(rclcpp_lifecycle::State &) {
+  CallbackReturn on_cleanup(const rclcpp_lifecycle::State &prev_state) {
     RCLCPP_INFO(this->get_logger(), "On Cleanup");
     return CallbackReturn::SUCCESS;
   }
 
-  CallbackReturn on_shutdown(rclcpp_lifecycle::State &) {
+  CallbackReturn on_shutdown(const rclcpp_lifecycle::State &prev_state) {
     RCLCPP_INFO(this->get_logger(), "On Shutdown");
     return CallbackReturn::SUCCESS;
   }
 
-  CallbackReturn on_error(rclcpp_lifecycle::State &) {
+  CallbackReturn on_error(const rclcpp_lifecycle::State &prev_state) {
     RCLCPP_INFO(this->get_logger(), "On Error");
     return CallbackReturn::SUCCESS;
   }
@@ -88,6 +100,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr vel_pub_;
+  rclcpp::TimerBase::SharedPtr init_timer_;
 };
 
 int main(int argc, char **argv) {
