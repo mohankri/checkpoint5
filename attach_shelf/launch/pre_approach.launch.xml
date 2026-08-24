@@ -2,7 +2,18 @@
 
   <!-- Declare launch arguments -->
   <arg name="obstacle" default="0.2"/>
-  <arg name="degrees" default="0.1"/>
+  <arg name="degrees" default="1"/>
+  <arg name="rviz_config_file_name" default="checkpoint5.rviz"/>
+
+ <!-- RViz -->
+  <node
+    pkg="rviz2"
+    exec="rviz2"
+    name="rviz2"
+    output="screen"
+    args="-d $(find-pkg-share attach_shelf)/rviz/$(var rviz_config_file_name)">
+    <param name="use_sim_time" value="true"/>
+  </node>
 
   <!-- Node definition -->
   <node
@@ -18,4 +29,5 @@
 
   </node>
 
+   
 </launch>
