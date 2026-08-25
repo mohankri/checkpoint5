@@ -173,9 +173,9 @@ private:
         cmd.linear.x = 0.0;
         cmd.angular.z = 0.0;
         phase_ = Phase::ADVANCE;
-        RCLCPP_INFO(this->get_logger(), "Move to Advance");
         start_x_ = current_x_;
         start_y_ = current_y_;
+        RCLCPP_INFO(this->get_logger(), "Move to Advance");
       }
       // RCLCPP_INFO(this->get_logger(), "distance %f error_yaw %f",
       //             error_distance, error_yaw);
@@ -189,10 +189,9 @@ private:
           std::hypot(current_x_ - start_x_, current_y_ - start_y_);
       cmd.linear.x = 0.2;
 
-      if (0.60 - traveled < 0.01) {
+      if ((0.60 - traveled) < 0.01) {
         cmd.linear.x = 0.0;
         phase_ = Phase::ELEVATOR_UP;
-        RCLCPP_INFO(this->get_logger(), "Move to Elevator Up");
       }
       cmd.angular.z = 0.0;
       vel_publisher_->publish(cmd);

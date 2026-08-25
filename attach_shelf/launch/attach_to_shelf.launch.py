@@ -55,6 +55,15 @@ def generate_launch_description():
         parameters=[{'use_sim_time': True}],
     )
 
+    approach_service_server = Node(
+        package=PACKAGE_NAME,                # 'attach_shelf'
+        executable='approach_service_server',  # ← must match the CMake target name
+        name='approach_service_server',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{'use_sim_time': True}],
+    )
+
     return LaunchDescription([
         obstacle_arg,
         degrees_arg,
@@ -64,6 +73,7 @@ def generate_launch_description():
         LogInfo(msg=['degrees: ', degrees]),
         LogInfo(msg=['rviz config: ', rviz_config_file_name]),
         LogInfo(msg=['final_approach: ', final_approach]),
-        pre_approach_v2,
         rviz_node,
+        pre_approach_v2,
+        approach_service_server
     ])
