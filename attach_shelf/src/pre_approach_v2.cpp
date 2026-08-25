@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <memory>
 
+using namespace std;
+
 using CallbackReturn =
     rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
@@ -32,9 +34,13 @@ public:
     rcl_interfaces::msg::ParameterDescriptor degrees_desc;
     degrees_desc.description = "Number of degree of rotation";
 
+    rcl_interfaces::msg::ParameterDescriptor final_approach_desc;
+    final_approach_desc.description = "Final Approach description";
+
     /* declare decriptor */
     this->declare_parameter<double>("obstacle", 0.0, obstacle_desc);
     this->declare_parameter<int>("degrees", 0.0, degrees_desc);
+    this->declare_parameter<bool>("final_approach", false, final_approach_desc);
 
     init_timer_ =
         this->create_wall_timer(std::chrono::milliseconds(0), [this]() {
@@ -44,11 +50,12 @@ public:
           this->activate();
           init_timer_->cancel(); // one-shot
         });
-
+#if 0
     RCLCPP_INFO(this->get_logger(), "Obstacle Distance %f",
                 this->get_parameter("obstacle").as_double());
     RCLCPP_INFO(this->get_logger(), "Degrees %d",
-                this->get_parameter("degrees").as_int());
+                this->get_parameter("degrees").as_double());
+#endif
   }
 
 protected:
@@ -68,7 +75,9 @@ protected:
         std::bind(&PreApproach::scan_callback, this, std::placeholders::_1));
     obstacle_range_ = this->get_parameter("obstacle").as_double();
     degrees_rotation_ = this->get_parameter("degrees").as_int();
+    final_approach_ = this->get_parameter("final_approach").as_bool();
 
+    RCLCPP_INFO(this->get_logger(), "Final Approach %d", final_approach_);
     return CallbackReturn::SUCCESS;
   }
 
@@ -194,6 +203,7 @@ private:
   double error_distance_ = 0.0f;
   double current_yaw_ = 0.0f;
   double target_yaw_ = 0.0f;
+  bool final_approach_ = false;
 
   enum class Phase { APPROACH, ROTATE, DONE };
   Phase phase_ = Phase::DONE;

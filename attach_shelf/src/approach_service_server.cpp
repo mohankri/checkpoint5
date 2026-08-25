@@ -21,6 +21,7 @@ public:
         "/scan", qos,
         std::bind(&ApproachService::scan_callback, this,
                   std::placeholders::_1));
+    // tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
   }
 
 private:
@@ -48,9 +49,31 @@ private:
       current_.clear();
     }
     RCLCPP_INFO(this->get_logger(), "Cluster Size %ld", cluster_.size());
+    if (cluster_.size() == 0) {
+    }
   }
+
+  void publish_transform() {
+#if 0
+    // in the scan callback, after computing the midpoint `target` (body frame):
+    geometry_msgs::msg::TransformStamped t;
+    t.header.stamp = msg->header.stamp; // the scan's own time, not now()
+    t.header.frame_id =
+        "robot_front_laser_base_link"; // the frame `target` was computed IN
+    t.child_frame_id = "cart_frame";   // the frame being created
+    t.transform.translation.x = target.x;
+    t.transform.translation.y = target.y;
+    t.transform.translation.z = 0.0;
+    t.transform.rotation.w =
+        1.0; // identity (x=y=z=0 default) — position-only frame
+    tf_broadcaster_->send_transform(t);
+#endif
+  }
+
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
   rclcpp::Service<attach_shelf::srv::GoToLoading>::SharedPtr service_;
+  // std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+
   const std::string service_name_ = "/approach_shelf";
 };
 

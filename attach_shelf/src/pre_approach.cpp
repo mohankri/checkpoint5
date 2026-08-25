@@ -160,7 +160,7 @@ private:
       auto err = target_yaw_ - current_yaw_;
       cmd.linear.x = 0.0;
       cmd.angular.z = err;
-#if 0
+#if 1
       RCLCPP_INFO(
           this->get_logger(),
           "Perform ROTATE Operation target %0.2f current %0.2f diff %0.2f",
