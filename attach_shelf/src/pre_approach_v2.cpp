@@ -1,3 +1,4 @@
+#include "attach_shelf/srv/go_to_loading.hpp"
 #include "geometry_msgs/msg/detail/twist__struct.hpp"
 #include "lifecycle_msgs/msg/transition.hpp"
 #include "lifecycle_msgs/srv/change_state.hpp"
@@ -50,12 +51,17 @@ public:
           this->activate();
           init_timer_->cancel(); // one-shot
         });
-#if 0
-    RCLCPP_INFO(this->get_logger(), "Obstacle Distance %f",
-                this->get_parameter("obstacle").as_double());
-    RCLCPP_INFO(this->get_logger(), "Degrees %d",
-                this->get_parameter("degrees").as_double());
-#endif
+
+    service_client_ =
+        this->create_client<attach_shelf::srv::GoToLoading>(service_name_);
+    // Wait for the service to be available (checks every second)
+    while (!service_client_->wait_for_service(1s)) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Interrupted while waiting for the service. Exiting.");
+        return;
+      }
+    }
   }
 
 protected:
@@ -112,20 +118,29 @@ protected:
   }
 
 private:
+  void attach_to_shelf_response(
+      rclcpp::Client<attach_shelf::srv::GoToLoading>::SharedFuture future) {
+    auto response = future.get();
+    RCLCPP_INFO(this->get_logger(), "Attach to Self Response %d",
+                response->complete);
+  }
+
+  void send_attach_to_shelf_request(bool flag) {
+    auto request = std::make_shared<attach_shelf::srv::GoToLoading::Request>();
+
+    request->attach_to_shelf = flag;
+
+    // Callback fires when the response arrives — no blocking, no second
+    // executor
+    service_client_->async_send_request(
+        request, std::bind(&PreApproach::attach_to_shelf_response, this,
+                           std::placeholders::_1));
+  }
+
   void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg) {
 
-    float center_min = std::numeric_limits<float>::infinity();
-    float center_max = 0.0f;
-#if 0
-    RCLCPP_INFO(this->get_logger(), "Total Number of Sample data %ld",
-                msg->ranges.size());
-    RCLCPP_INFO(this->get_logger(), "Value at 0 degree(right side) %0.2f",
-                msg->ranges[0]);
-    RCLCPP_INFO(this->get_logger(), "Value at 180 degree (right side) %0.2f",
-                msg->ranges[msg->ranges.size() - 1]);
-    RCLCPP_INFO(this->get_logger(), "Value at 90 Center %0.2f",
-                msg->ranges[msg->ranges.size() / 2]);
-#endif
+    // float center_min = std::numeric_limits<float>::infinity();
+    // float center_max = 0.0f;
 
     error_distance_ = obstacle_range_ *
                       (msg->ranges[msg->ranges.size() / 2] - obstacle_range_);
@@ -142,11 +157,6 @@ private:
     tf2::Quaternion q(
         odom_msg->pose.pose.orientation.x, odom_msg->pose.pose.orientation.y,
         odom_msg->pose.pose.orientation.z, odom_msg->pose.pose.orientation.w);
-#if 0
-    current_pos_.x = odom_msg->pose.pose.position.x;
-    current_pos_.y = odom_msg->pose.pose.position.y;
-    current_pos_.theta = tf2::getYaw(q);
-#endif
 
     current_yaw_ = 2.0 * std::atan2(q.z(), q.w());
     if (target_yaw_ == 0) {
@@ -167,17 +177,23 @@ private:
     }
     case Phase::ROTATE: {
       auto err = target_yaw_ - current_yaw_;
+      err = std::atan2(std::sin(err),
+                       std::cos(err)); // wrap: −3.15 target handled
+
+      // err =
       cmd.linear.x = 0.0;
-      cmd.angular.z = err;
-#if 0
+      cmd.angular.z = std::clamp(err, -0.05, 0.05);
+      ; // err;
+#if 1
       RCLCPP_INFO(
           this->get_logger(),
           "Perform ROTATE Operation target %0.2f current %0.2f diff %0.2f",
-          target_yaw_, current_yaw_, err);
+          target_yaw_, current_yaw_, std::clamp(err, -0.03, 0.03));
 #endif
       vel_pub_->publish(cmd);
       if (abs(err) < 0.03) {
         phase_ = Phase::DONE;
+        send_attach_to_shelf_request(final_approach_);
       }
       break;
     }
@@ -194,6 +210,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_sub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr vel_pub_;
+  rclcpp::Client<attach_shelf::srv::GoToLoading>::SharedPtr service_client_;
+
   rclcpp::TimerBase::SharedPtr init_timer_;
   rclcpp::TimerBase::SharedPtr drive_timer_;
 
@@ -204,6 +222,7 @@ private:
   double current_yaw_ = 0.0f;
   double target_yaw_ = 0.0f;
   bool final_approach_ = false;
+  const std::string service_name_ = "/approach_shelf";
 
   enum class Phase { APPROACH, ROTATE, DONE };
   Phase phase_ = Phase::DONE;

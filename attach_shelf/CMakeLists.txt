@@ -15,6 +15,7 @@ find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
 	"srv/GoToLoading.srv"
@@ -29,9 +30,12 @@ ament_target_dependencies(pre_approach rclcpp rclcpp_lifecycle
 add_executable(pre_approach_v2 src/pre_approach_v2.cpp)
 ament_target_dependencies(pre_approach_v2 rclcpp rclcpp_lifecycle
 	sensor_msgs nav_msgs tf2 tf2_geometry_msgs)
+target_link_libraries(pre_approach_v2 "${cpp_typesupport_target}")
+
 
 add_executable(approach_service_server src/approach_service_server.cpp)
-ament_target_dependencies(approach_service_server rclcpp std_srvs)
+ament_target_dependencies(approach_service_server rclcpp std_srvs 
+	nav_msgs tf2_ros tf2_geometry_msgs std_msgs)
 
 target_link_libraries(approach_service_server "${cpp_typesupport_target}")
 
